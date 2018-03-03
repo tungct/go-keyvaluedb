@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	pb "github.com/tungct/go-keyvaluedb/test_grpc/rpc"
+	pb "github.com/tungct/go-keyvaluedb/rpc"
 	"google.golang.org/grpc/reflection"
 )
 
