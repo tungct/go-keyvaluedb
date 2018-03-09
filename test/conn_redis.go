@@ -11,7 +11,6 @@ func ExampleNewClient() {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
-
 	pong, err := client.Ping().Result()
 	fmt.Println(pong, err)
 	err = client.Set("key", "value", 0).Err()

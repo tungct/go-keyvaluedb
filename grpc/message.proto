@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package grpc;
+
+service c {
+    rpc SendMessage(Message) returns (MessageResponse){}
+}
+
+message Message{
+    int32 id = 1;
+    string content = 2;
+}
+
+message MessageResponse{
+    string content = 1;
+}

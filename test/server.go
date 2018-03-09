@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pb "github.com/tungct/go-keyvaluedb/rpc"
@@ -19,10 +18,10 @@ type server struct{}
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
+	return &pb.HelloReply{Message: "Hello " + in.Name, Status : 1}, nil
 }
 func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	return &pb.HelloReply{Message: "Hello again " + in.Name, Status : 1}, nil
+	return &pb.HelloReply{Message: "Hello again " + in.Name, Status : 2}, nil
 }
 
 func main() {
