@@ -7,14 +7,17 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pb "github.com/tungct/go-keyvaluedb/grpc"
+	"math/rand"
+	"fmt"
 )
 
 const (
 	address     = "localhost:8888"
-	defaultContent = "Hello"
+	defaultContent = "Hello" // if arg is none
 )
 
 func main() {
+	// init grpc client
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
@@ -22,19 +25,23 @@ func main() {
 	defer conn.Close()
 	c := pb.NewSendMessageClient(conn)
 
-	for i:=0;i<10;i++ {
+	content := defaultContent
+	if len(os.Args) > 1 {
+		content = os.Args[1] // get content message from arg
+	}
 
-		content := defaultContent
-		if len(os.Args) > 1 {
-			content = os.Args[1]
-		}
+	// send n message to server grpc
+	for i:=0;i<10;i++ {
+		id := rand.Intn(100)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		r, err := c.SendMessage(ctx, &pb.Message{Id:1, Content:content})
+		message := &pb.Message{Id:int32(id), Content:content}
+		r, err := c.SendMessage(ctx, message)
+		fmt.Println("Send message ", *message)
 		if err != nil {
-			log.Fatalf("could not greet: %v", err)
+			log.Fatalf("fail to send: %v", err)
 		}
-		log.Printf("Greeting: %s", r)
+		log.Printf("Rec from server : %s", r)
 		time.Sleep(1*time.Second)
 	}
 }

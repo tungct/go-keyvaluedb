@@ -7,34 +7,55 @@ import (
 	"google.golang.org/grpc"
 	pb "github.com/tungct/go-keyvaluedb/grpc"
 	"github.com/go-redis/redis"
-	"github.com/tungct/go-keyvaluedb/storage_redis"
+	"github.com/tungct/go-keyvaluedb/redis_storage"
 	"google.golang.org/grpc/reflection"
 	"github.com/tungct/go-keyvaluedb/messqueue"
 	"fmt"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/tungct/go-keyvaluedb/leveldb_storage"
 )
 
 const (
 	port = ":8888"
+        pathLevelDb = "../leveldb_storage/keyvaluedb"
 )
 
 var messQueue chan pb.Message
+
+// redis client
 var connRedis *redis.Client
+
+// levelDb client
+var connLevelDb * leveldb.DB
 
 type server struct{}
 
+// implement SendMessage method grpc
 func (s *server) SendMessage(ctx context.Context, in *pb.Message)(*pb.MessageResponse, error){
 	var err error
 	fmt.Println("Rec message from client : ", in)
-	messQueue, err = messqueue.PutMessage(messQueue, *in, connRedis)
+
+	// handle message receive from client with messageQueue, redis and levelDb
+	messQueue, err = messqueue.PutMessage(messQueue, *in, connRedis, connLevelDb)
 	if err != nil{
 		fmt.Println(err)
 	}
+
+	// return response to client
 	return &pb.MessageResponse{Content: "Response from server"}, nil
 }
 
 func main(){
-	connRedis = storage_redis.InitConnRedis()
+	// init redis client
+	connRedis = redis_storage.InitConnRedis()
+
+	// init levelDb client
+	connLevelDb , _ = leveldb_storage.InitConnLevelDb(pathLevelDb, nil)
+
+	// init message Queue
 	messQueue = messqueue.InitMessageQueue()
+
+	// init grpc server
 	lis, er := net.Listen("tcp", port)
 	fmt.Println("Server listen at port 8888")
 	if er != nil{
