@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tungct/go-keyvaluedb/leveldb_storage"
+	"github.com/tungct/go-keyvaluedb/cache_map"
+	"strconv"
 )
 
 const (
@@ -22,6 +24,9 @@ const (
 
 var messQueue chan pb.Message
 
+var cache map[string] string
+var lenghtCache int
+var maxLenghtCache int
 // redis client
 var connRedis *redis.Client
 
@@ -36,7 +41,10 @@ func (s *server) SendMessage(ctx context.Context, in *pb.Message)(*pb.MessageRes
 	fmt.Println("Rec message from client : ", in)
 
 	// handle message receive from client with messageQueue, redis and levelDb
-	messQueue, err = messqueue.PutMessage(messQueue, *in, connRedis, connLevelDb)
+	//messQueue, err = messqueue.PutMessage(messQueue, *in, connRedis, connLevelDb)
+	cache, lenghtCache = cache_map.PutItemToCache(cache, strconv.Itoa(int(in.Id)), in.Content, lenghtCache)
+	fmt.Println("Lenght Cache : ", lenghtCache)
+	fmt.Println(len(cache))
 	if err != nil{
 		fmt.Println(err)
 	}
@@ -54,6 +62,9 @@ func main(){
 
 	// init message Queue
 	messQueue = messqueue.InitMessageQueue()
+
+	cache, maxLenghtCache = cache_map.InitCacheMap()
+	lenghtCache = 0
 
 	// init grpc server
 	lis, er := net.Listen("tcp", port)
