@@ -2,27 +2,52 @@ package cache_map
 
 import (
 	"unsafe"
+	"github.com/go-redis/redis"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/tungct/go-keyvaluedb/redis_storage"
+	"fmt"
 )
 
-const sizeCache = 10 * 1024 // 10 kb
+const sizeCache = 5 * 32 // 10 kb
+var maxLenghtCache int = sizeCache / ( int(unsafe.Sizeof("")) + int(unsafe.Sizeof("")) )
 
-func InitCacheMap() (c map[string] string, len int){
+// init mem cache
+func InitCacheMap() (c map[string] string){
 	cache := make(map[string] string)
-	lenCache := sizeCache / ( int(unsafe.Sizeof("")) + int(unsafe.Sizeof(cache[""])) )
-	return cache, lenCache
+	return cache
 }
 
+// remove item in mem cache
 func RemoveItemCache(cache map[string] string, key string, lenghtCache int) (c map[string] string, len int){
 	delete(cache, key)
 	lenghtCache --
 	return cache, lenghtCache
 }
 
-func AddItemToCache(cache map[string] string, key string, value string, lenghtCache int) (c map[string] string, len int){
-	if cache[key] != ""{
+// cache a item to mem cache, if over cache, cache to redis
+func AddItemToCache(cache map[string] string, key string, value string, lenghtCache int, client *redis.Client, db *leveldb.DB) (c map[string] string, lenght int){
+	if len(cache) < maxLenghtCache {
+		// if not exist item in cache
+		if cache[key] != "" {
+			return cache, lenghtCache
+		}
+		cache[key] = value
+		lenghtCache ++
+		return cache, lenghtCache
+	}else {
+		redis_storage.SetKeyValueToRedis(client, key, value)
+		fmt.Println("Cache full, cache to redis")
 		return cache, lenghtCache
 	}
-	cache[key] = value
-	lenghtCache ++
-	return cache, lenghtCache
+}
+
+// get item in mem cache, if not found, get in redis
+func GetItemCache(cache map[string]string, key string, client * redis.Client) string{
+	// if item in mem cache
+	if val, ok := cache[key]; ok {
+		return val
+	}else { // else, get in redis
+		val,_ := redis_storage.GetValueFromKeyRedis(client, key)
+		return val
+	}
 }

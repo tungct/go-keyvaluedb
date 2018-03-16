@@ -23,6 +23,7 @@ func SetKeyValueToRedis(client *redis.Client, key string, value string) *redis.S
 
 // get value with key in redis
 func GetValueFromKeyRedis(client *redis.Client, key string) (value string, er error){
+	fmt.Println("Value get from redis")
 	val, err := client.Get(key).Result()
 	if err == redis.Nil {
 		fmt.Println("key does not exist")

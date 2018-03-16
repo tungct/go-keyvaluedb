@@ -26,7 +26,7 @@ var messQueue chan pb.Message
 
 var cache map[string] string
 var lenghtCache int
-var maxLenghtCache int
+
 // redis client
 var connRedis *redis.Client
 
@@ -42,15 +42,24 @@ func (s *server) SendMessage(ctx context.Context, in *pb.Message)(*pb.MessageRes
 
 	// handle message receive from client with messageQueue, redis and levelDb
 	//messQueue, err = messqueue.PutMessage(messQueue, *in, connRedis, connLevelDb)
-	cache, lenghtCache = cache_map.PutItemToCache(cache, strconv.Itoa(int(in.Id)), in.Content, lenghtCache)
-	fmt.Println("Lenght Cache : ", lenghtCache)
+
+	// cache item
+	if int(in.Id) != -1{
+		cache, lenghtCache = cache_map.PutItemToCache(cache, strconv.Itoa(int(in.Id)), in.Content, lenghtCache, connRedis, connLevelDb)
+		fmt.Println("Lenght Cache : ", lenghtCache)
+	}else { // get item in cache
+		value := cache_map.GetItemInCache(cache, in.Content, connRedis)
+		fmt.Println("Value", value)
+		return &pb.MessageResponse{Content: "Response from server" + value }, nil
+	}
+
 	fmt.Println(len(cache))
 	if err != nil{
 		fmt.Println(err)
 	}
 
 	// return response to client
-	return &pb.MessageResponse{Content: "Response from server"}, nil
+	return &pb.MessageResponse{Content: "Response from server" }, nil
 }
 
 func main(){
@@ -63,7 +72,7 @@ func main(){
 	// init message Queue
 	messQueue = messqueue.InitMessageQueue()
 
-	cache, maxLenghtCache = cache_map.InitCacheMap()
+	cache = cache_map.InitCacheMap()
 	lenghtCache = 0
 
 	// init grpc server
