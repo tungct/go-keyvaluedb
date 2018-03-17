@@ -15,6 +15,7 @@ import (
 	"github.com/tungct/go-keyvaluedb/leveldb_storage"
 	"github.com/tungct/go-keyvaluedb/cache_map"
 	"strconv"
+	"time"
 )
 
 const (
@@ -25,6 +26,9 @@ const (
 var messQueue chan pb.Message
 
 var cache map[string] string
+var timeItem map[string] int // map key and time cache
+var countRequest map[string] int // map key and count Request item
+
 var lenghtCache int
 
 // redis client
@@ -45,10 +49,10 @@ func (s *server) SendMessage(ctx context.Context, in *pb.Message)(*pb.MessageRes
 
 	// cache item
 	if int(in.Id) != -1{
-		cache, lenghtCache = cache_map.PutItemToCache(cache, strconv.Itoa(int(in.Id)), in.Content, lenghtCache, connRedis, connLevelDb)
+		cache, lenghtCache = cache_map.PutItemToCache(cache, timeItem, countRequest, strconv.Itoa(int(in.Id)), in.Content, lenghtCache, connRedis, connLevelDb)
 		fmt.Println("Lenght Cache : ", lenghtCache)
 	}else { // get item in cache
-		value := cache_map.GetItemInCache(cache, in.Content, connRedis)
+		value := cache_map.GetItemInCache(cache, timeItem, countRequest, in.Content, connRedis)
 		fmt.Println("Value", value)
 		return &pb.MessageResponse{Content: "Response from server" + value }, nil
 	}
@@ -73,7 +77,17 @@ func main(){
 	messQueue = messqueue.InitMessageQueue()
 
 	cache = cache_map.InitCacheMap()
+	timeItem = make(map[string]int)
+	countRequest = make(map[string]int)
 	lenghtCache = 0
+
+	// worker to check cache per time second
+	go func() {
+		for{
+			cache_map.WorkerCache(cache, timeItem, countRequest, lenghtCache, connRedis)
+			time.Sleep(1 * time.Second)
+		}
+	}()
 
 	// init grpc server
 	lis, er := net.Listen("tcp", port)
