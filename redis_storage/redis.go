@@ -38,3 +38,12 @@ func DelKeyValueRedis(client * redis.Client, key string) *redis.IntCmd{
 	err := client.Del(key)
 	return err
 }
+
+func CheckItemInRedis(client * redis.Client, key string) bool{
+	_, err := client.Get(key).Result()
+	if err != redis.Nil {
+		return true
+	}else {
+		return false
+	}
+}

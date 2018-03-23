@@ -31,9 +31,9 @@ func main() {
 	}
 
 	// send n message to server grpc
-	for i:=0;i<10;i++ {
+	for i:=1;i<=10;i++ {
 		//id := rand.Intn(100)
-		content = strconv.Itoa(int(i+1))
+		content = strconv.Itoa(int(i))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		message := &pb.Message{Id:int32(i), Content:content}

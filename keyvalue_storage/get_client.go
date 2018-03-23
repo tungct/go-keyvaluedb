@@ -34,7 +34,7 @@ func main() {
 	// send n message to server grpc
 	for i:=0;i<10;i++ {
 		//id := rand.Intn(100)
-		content = strconv.Itoa(int(2))
+		content = strconv.Itoa(int(7))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		message := &pb.Message{Id:int32(-1), Content:content}
@@ -44,6 +44,6 @@ func main() {
 			log.Fatalf("fail to send: %v", err)
 		}
 		log.Printf("Rec from server : %s", r)
-		time.Sleep(1*time.Second)
+		//time.Sleep(1*time.Second)
 	}
 }

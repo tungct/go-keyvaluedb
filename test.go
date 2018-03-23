@@ -25,8 +25,14 @@ func main (){
 	timeNow := time.Now().Unix()
 	time.Sleep(1 * time.Second)
 	timeAfter := time.Now().Unix()
+	fmt.Println("Time")
 	fmt.Println(timeAfter - timeNow)
 	for k := range ma{
 		fmt.Println(k)
+	}
+	fmt.Println("_____")
+	fmt.Println(float64(1)/3)
+	if float32(4)/3 > 1{
+		fmt.Println("DOne")
 	}
 }
