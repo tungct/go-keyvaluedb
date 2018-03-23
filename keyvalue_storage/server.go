@@ -26,7 +26,8 @@ const (
 var messQueue chan pb.Message
 
 var cache map[string] string
-var timeItem map[string] int // map key and time cache
+var timeItemInit map[string] int
+var timeItemRedis map[string] int // map key and time cache
 var timeItemCache map[string] int
 var countRequest map[string] int // map key and count Request item
 
@@ -50,15 +51,14 @@ func (s *server) SendMessage(ctx context.Context, in *pb.Message)(*pb.MessageRes
 
 	// cache item
 	if int(in.Id) != -1{
-		cache_map.PutItemToCache(&cache, &timeItem, &timeItemCache, &countRequest, strconv.Itoa(int(in.Id)), in.Content, &lenghtCache, connRedis, connLevelDb)
+		cache_map.PutItemToCache(&cache, &timeItemInit, &timeItemCache, &timeItemRedis, &countRequest, strconv.Itoa(int(in.Id)), in.Content, &lenghtCache, connRedis, connLevelDb)
 		fmt.Println("Lenght Cache : ", lenghtCache)
 	}else { // get item in cache
-		value := cache_map.GetItemInCache(&cache, &timeItem, &timeItemCache, &countRequest, in.Content, connRedis)
+		value := cache_map.GetItemInCache(&cache, &timeItemCache, &timeItemRedis, &countRequest, in.Content, connRedis)
 		fmt.Println("Value", value)
 		return &pb.MessageResponse{Content: "Response from server" + value }, nil
 	}
 
-	fmt.Println(len(cache))
 	if err != nil{
 		fmt.Println(err)
 	}
@@ -78,21 +78,22 @@ func main(){
 	messQueue = messqueue.InitMessageQueue()
 
 	cache = cache_map.InitCacheMap()
-	timeItem = make(map[string]int)
-	timeItemCache = make(map[string] int)
+	timeItemInit = make(map[string] int)
+	timeItemCache = make(map[string]int)
+	timeItemRedis = make(map[string] int)
 	countRequest = make(map[string]int)
 	lenghtCache = 0
 
 	// worker to check cache per time second
 	go func() {
 		for{
-			cache_map.WorkerCache(&cache, &timeItem, &countRequest, &lenghtCache, connRedis, connLevelDb)
+			cache_map.TimeOutWorker(&cache,&timeItemInit, &timeItemCache, &timeItemRedis, &countRequest, &lenghtCache, connRedis, connLevelDb)
 			time.Sleep(1 * time.Second)
 		}
 	}()
 	go func() {
 		for{
-			cache_map.Worker(&cache, &timeItem, &timeItemCache, &countRequest, &lenghtCache, connRedis, connLevelDb)
+			cache_map.FrequencyWorker(&cache, &timeItemInit, &timeItemCache, &timeItemRedis, &countRequest, &lenghtCache, connRedis, connLevelDb)
 			time.Sleep(1 * time.Second)
 		}
 	}()

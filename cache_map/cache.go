@@ -9,14 +9,17 @@ import (
 )
 
 const timeOut  = 10 // time second
+const nano2second = 1000000000
 
 // cache a item
-func PutItemToCache(cache *map[string] string, timeItem *map[string] int, timeItemCache *map[string] int, countRequest *map[string]int, key string, value string, lenghtCache *int, client *redis.Client, db *leveldb.DB){
+func PutItemToCache(cache *map[string] string, timeItemInit *map[string] int, timeItemCache *map[string] int, timeItemRedis *map[string] int, countRequest *map[string]int, key string, value string, lenghtCache *int, client *redis.Client, db *leveldb.DB){
 	if len(*cache) < (maxLenghtCache){
-		AddItemToCache(cache, timeItem, countRequest, key, value, lenghtCache, client, db)
+		AddItemToCache(cache, timeItemInit, timeItemCache, countRequest, key, value, lenghtCache, client, db)
 	}else {
 		redis_storage.SetKeyValueToRedis(client, key, value)
-		(*timeItemCache)[key] = int(time.Now().Unix())
+		timeNow := int(time.Now().UnixNano())
+		(*timeItemRedis)[key] = timeNow
+		(*timeItemInit)[key] = timeNow
 		(*countRequest)[key] = 1
 		fmt.Println("Cache full, cache to redis")
 	}
@@ -30,12 +33,12 @@ func PrintCache(cache *map[string] string){
 }
 
 // get item in cache with key
-func GetItemInCache(cache *map[string]string, timeItem *map[string] int, timeItemCache *map[string] int, countRequest *map[string]int, key string, client * redis.Client)string{
+func GetItemInCache(cache *map[string]string, timeItemCache *map[string] int, timeItemRedis *map[string] int, countRequest *map[string]int, key string, client * redis.Client)string{
 	if val, ok := (*cache)[key]; ok {
-		GetItemCache(cache, timeItem, countRequest, key, client)
+		GetItemCache(cache, timeItemCache, countRequest, key, client)
 		return val
 	}else { // else, get in redis
-		(*timeItemCache)[key] = int(time.Now().Unix())
+		(*timeItemRedis)[key] = int(time.Now().UnixNano())
 		(*countRequest)[key] = (*countRequest)[key] + 1
 		val,_ := redis_storage.GetValueFromKeyRedis(client, key)
 		return val
@@ -56,55 +59,56 @@ func GetItemInCache(cache *map[string]string, timeItem *map[string] int, timeIte
 //	}
 //}
 
-func WorkerCache(cach *map[string] string, timeIte *map[string] int, countReques *map[string] int, lenghtCach *int, client * redis.Client, db *leveldb.DB){
-	timeNow := time.Now().Unix()
-	//countRequest := * countReques
-	//lenghtCache := * lenghtCach
+func TimeOutWorker(cache *map[string] string, timeItemInit *map[string] int, timeItemCache *map[string] int, timeItemRedis *map[string] int, countRequest *map[string] int, lenghtCache *int, client * redis.Client, db *leveldb.DB){
+	timeNow := time.Now().UnixNano()
 
 	// check time out in cache
-	for key := range *timeIte{
-		if(int(timeNow) - (*timeIte)[key] >= timeOut){
+	for key := range *timeItemCache{
+		if(float32(int(timeNow) - (*timeItemCache)[key]) / nano2second >= timeOut){
 			fmt.Println(key, " Time out")
-			if CheckItemInCache(cach, key) == true {
-				RemoveItemCache(cach, timeIte, countReques, key, lenghtCach)
-				fmt.Println("Lenght cache : ", *lenghtCach)
-
-			}else { // delete in redis
-				redis_storage.DelKeyValueRedis(client, key)
+			if CheckItemInCache(cache, key) == true {
+				RemoveItemCache(cache, timeItemInit, timeItemCache, countRequest, key, lenghtCache)
 			}
+		}
+	}
+	for key := range *timeItemRedis{
+		if(float32(int(timeNow) - (*timeItemRedis)[key]) / nano2second >= timeOut){
+			fmt.Println(key, " Time out 2")
+			redis_storage.DelKeyValueRedis(client, key)
+			delete(*timeItemRedis, key)
+			delete(*timeItemInit, key)
+			delete(*countRequest, key)
 		}
 	}
 
 }
 
-func Worker(cache *map[string] string, timeItem *map[string] int, timeItemCache *map[string] int, countRequest *map[string] int, lenghtCache *int, client * redis.Client, db *leveldb.DB) {
+func FrequencyWorker(cache *map[string] string, timeItemInit *map[string] int, timeItemCache *map[string] int, timeItemRedis *map[string] int, countRequest *map[string] int, lenghtCache *int, client * redis.Client, db *leveldb.DB) {
 
-	timeNow := time.Now().Unix()
+	timeNow := time.Now().UnixNano()
 
-	for key := range *timeItemCache {
-		if (float32((*countRequest)[key]) / (float32(int(timeNow) - (*timeItemCache)[key]))) > 3 {
+	for key := range *timeItemRedis {
+		if ((float32((int(timeNow) - (*timeItemInit)[key]) ) / nano2second) >= 2) && (((float32((*countRequest)[key])) / ((float32(int(timeNow) - (*timeItemRedis)[key])) / nano2second)) > 3 ){
 			if redis_storage.CheckItemInRedis(client, key) == true {
 				fmt.Println("in redis")
 				fmt.Println("Lenght cache : ", *lenghtCache)
 				if *lenghtCache < maxLenghtCache {
 					value, _ := redis_storage.GetValueFromKeyRedis(client, key)
-					PutItemToCache(cache, timeItem, timeItemCache, countRequest, key, value, lenghtCache, client, db)
+					PutItemToCache(cache, timeItemInit, timeItemCache, timeItemRedis, countRequest, key, value, lenghtCache, client, db)
 					redis_storage.DelKeyValueRedis(client, key)
-					fmt.Println("Check in cache : ", (*cache)[key])
 					PrintCache(cache)
 				} else {
-
 					// check item have lowest frequency in cache, delete it
 					var kMin string
 					check := false
 					for k := range *cache {
-						if (int(timeNow) - (*timeItem)[k] >= 2) {
+						if (float32((int(timeNow) - (*timeItemCache)[k]) ) / nano2second) >= 2 {
 							if check == false {
 								kMin = k
 								check = true
 							} else {
 								// check item in cache, if item have time >=2 and have lowest-frequency
-								if (float32((*countRequest)[k]) / float32(int(timeNow) - (*timeItem)[k]) < float32((*countRequest)[kMin]) / float32(int(timeNow) - (*timeItem)[kMin])) {
+								if (float32((*countRequest)[k]) / float32(int(timeNow) - (*timeItemCache)[k]) < float32((*countRequest)[kMin]) / float32(int(timeNow) - (*timeItemCache)[kMin])) {
 									kMin = k
 								}
 							}
@@ -112,16 +116,14 @@ func Worker(cache *map[string] string, timeItem *map[string] int, timeItemCache 
 					}
 					fmt.Println("Del item : ", kMin, " in cache")
 					// delete item have lowest-frequency in cache
-					RemoveItemCache(cache, timeItem, countRequest, key, lenghtCache)
+					RemoveItemCache(cache, timeItemInit, timeItemCache, countRequest, kMin, lenghtCache)
 					PrintCache(cache)
-					for k,v := range *countRequest{
-						fmt.Println("K and V in countRequest : ", k,v)
-					}
 					value, _ := redis_storage.GetValueFromKeyRedis(client, key)
 
 					// put item in redis to cache
-					PutItemToCache(cache, timeItem, timeItemCache, countRequest, key, value, lenghtCache, client, db)
+					PutItemToCache(cache, timeItemInit, timeItemCache, timeItemRedis, countRequest, key, value, lenghtCache, client, db)
 					redis_storage.DelKeyValueRedis(client, key)
+					delete(*timeItemRedis, key)
 					fmt.Println("push from redis, Check in cache : ", (*cache)[key])
 					for k := range *cache {
 						fmt.Println("Key in cache : ", k)

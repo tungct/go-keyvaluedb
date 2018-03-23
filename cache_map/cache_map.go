@@ -5,7 +5,6 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/syndtr/goleveldb/leveldb"
 	"time"
-	"fmt"
 )
 
 const sizeCache = 5 * 32
@@ -18,27 +17,26 @@ func InitCacheMap() (c map[string] string){
 }
 
 // remove item in mem cache
-func RemoveItemCache(cach *map[string] string, timeIte *map[string] int, countReques *map[string] int, key string, lenghtCach *int){
-	cache := *cach
-	timeItem := *timeIte
-	countRequest := *countReques
+func RemoveItemCache(cache *map[string] string, timeItemInit *map[string] int, timeItemCache *map[string] int, countRequest *map[string] int, key string, lenghtCache *int){
+
 	//lenghtCache := *lenghtCach
-	delete(cache, key)
-	delete(timeItem, key)
-	delete(countRequest, key)
-	fmt.Println("Cache lenght : ", *lenghtCach)
-	*lenghtCach = *lenghtCach - 1
-	fmt.Println("After, lenght cache : ", *lenghtCach)
+	delete(*cache, key)
+	delete(*timeItemCache, key)
+	delete(*timeItemInit, key)
+	delete(*countRequest, key)
+	*lenghtCache = *lenghtCache - 1
 }
 
 // cache a item to mem cache, if over cache
-func AddItemToCache(cache *map[string] string, timeItem *map[string] int, countRequest *map[string] int, key string, value string, lenghtCache *int, client *redis.Client, db *leveldb.DB){
+func AddItemToCache(cache *map[string] string, timeItemInit *map[string] int, timeItemCache *map[string] int, countRequest *map[string] int, key string, value string, lenghtCache *int, client *redis.Client, db *leveldb.DB){
 	// if not exist item in cache
 	if (*cache)[key] != "" {
 		return
 	}else {
 		(*cache)[key] = value
-		(*timeItem)[key] = int(time.Now().Unix())
+		timeNow := int(time.Now().UnixNano())
+		(*timeItemInit)[key] = timeNow
+		(*timeItemCache)[key] = timeNow
 		(*countRequest)[key] = 1
 		*lenghtCache = *lenghtCache + 1
 		return
@@ -46,9 +44,9 @@ func AddItemToCache(cache *map[string] string, timeItem *map[string] int, countR
 }
 
 // get item in mem cache, if not found, get in redis
-func GetItemCache(cache *map[string]string, timeItem *map[string] int, countRequest *map[string] int, key string, client * redis.Client){
+func GetItemCache(cache *map[string]string, timeItemCache *map[string] int, countRequest *map[string] int, key string, client * redis.Client){
 	// if item in mem cache
-	(*timeItem)[key] = int(time.Now().Unix())
+	(*timeItemCache)[key] = int(time.Now().UnixNano())
 	(*countRequest)[key] = (*countRequest)[key] + 1
 }
 

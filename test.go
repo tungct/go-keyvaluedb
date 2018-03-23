@@ -22,11 +22,11 @@ func main (){
 	}
 	fmt.Println((int(unsafe.Sizeof(ma["1"]))))
 	fmt.Println(reflect.TypeOf(time.Now().Unix()))
-	timeNow := time.Now().Unix()
+	timeNow := time.Now().UnixNano()
 	time.Sleep(1 * time.Second)
-	timeAfter := time.Now().Unix()
+	timeAfter := (time.Now().UnixNano() )
 	fmt.Println("Time")
-	fmt.Println(timeAfter - timeNow)
+	fmt.Println(float32(timeAfter - ((timeNow)))/ 1000000000)
 	for k := range ma{
 		fmt.Println(k)
 	}
