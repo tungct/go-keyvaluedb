@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const sizeCache = 5 * 32
+const sizeCache = 200000 * 32
 var maxLenghtCache int = sizeCache / ( int(unsafe.Sizeof("")) + int(unsafe.Sizeof("")) )
 
 // init mem cache

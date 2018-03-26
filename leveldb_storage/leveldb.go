@@ -28,3 +28,18 @@ func GetValueFromKeyLevelDb(db *leveldb.DB, key string) (val string, err error){
 	return value, er
 }
 
+// del key-value in levelDb
+func DelKeyValueLevelDb(db *leveldb.DB, key string) error{
+	del := db.Delete([]byte(key), nil)
+	return del
+}
+
+// check item exits in levelDb
+func CheckItemInDb(db *leveldb.DB, key string) bool{
+	_, er := db.Get([]byte(key), nil)
+	if er != nil{
+		return false
+	}else {
+		return true
+	}
+}

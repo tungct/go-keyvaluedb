@@ -31,18 +31,29 @@ func main() {
 	}
 
 	// send n message to server grpc
+	count := 0
+
+	// send n message to server grpc
 	for i:=1;i<=10;i++ {
 		//id := rand.Intn(100)
-		content = strconv.Itoa(int(i))
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		message := &pb.Message{Id:int32(i), Content:content}
-		r, err := c.SendMessage(ctx, message)
-		fmt.Println("Send message ", *message)
-		if err != nil {
-			log.Fatalf("fail to send: %v", err)
-		}
-		log.Printf("Rec from server : %s", r)
-		time.Sleep(1*time.Second)
+		go func() {
+			for {
+
+				count = count + 1
+				content = strconv.Itoa(int(count))
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				message := &pb.Message{Id:int32(count), Content:content}
+				r, err := c.SendMessage(ctx, message)
+				fmt.Println("Send message ", *message)
+
+				if err != nil {
+					log.Fatalf("fail to send: %v", err)
+				}
+				log.Printf("Rec from server : %s", r)
+			}
+		}()
 	}
+	time.Sleep(5*time.Second)
+	fmt.Println("Done")
 }

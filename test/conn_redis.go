@@ -3,8 +3,13 @@ package main
 import (
 	"github.com/go-redis/redis"
 	"fmt"
-)
+	"reflect"
+	"strconv"
 
+	"time"
+	"sync"
+)
+var mutex = &sync.Mutex{}
 func ExampleNewClient() {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -17,21 +22,40 @@ func ExampleNewClient() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(reflect.TypeOf(client.DbSize().Val()))
+	count := 0
 
-	val, err := client.Get("key").Result()
-	if err != nil {
-		panic(err)
+	// send n message to server grpc
+	for i:=1;i<=10;i++ {
+		//id := rand.Intn(100)
+		go func() {
+			for {
+				count = count + 1
+				fmt.Println(count)
+				content := strconv.Itoa(int(count))
+				//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				//defer cancel()
+				client.Set(content, content, 0).Err()
+			}
+		}()
 	}
-	fmt.Println("key", val)
+	time.Sleep(5*time.Second)
 
-	val2, err := client.Get("key2").Result()
-	if err == redis.Nil {
-		fmt.Println("key2 does not exist")
-	} else if err != nil {
-		panic(err)
-	} else {
-		fmt.Println("key2", val2)
-	}
+
+	//val, err := client.Get("key").Result()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Println("key", val)
+	//
+	//val2, err := client.Get("key2").Result()
+	//if err == redis.Nil {
+	//	fmt.Println("key2 does not exist")
+	//} else if err != nil {
+	//	panic(err)
+	//} else {
+	//	fmt.Println("key2", val2)
+	//}
 }
 
 
