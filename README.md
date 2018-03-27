@@ -22,3 +22,4 @@ run test put client with 10 goroutine in during 5 time second :
 keyvalue_storage
 $go run client.go
 ```
+Kết quả 

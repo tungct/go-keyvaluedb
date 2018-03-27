@@ -55,5 +55,6 @@ func main() {
 		}()
 	}
 	time.Sleep(5*time.Second)
+	fmt.Println(count, "Request in 5 second")
 	fmt.Println("Done")
 }
