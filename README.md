@@ -1,6 +1,18 @@
 # go-keyvaluedb
+Thư viện sử dụng : 
+- go-Redis :  https://github.com/go-redis/redis
+- go-LevelDb : https://github.com/syndtr/goleveldb/leveldb
 
-https://github.com/go-redis/redis
+## Getting started
+run server : 
 
+```
+keyvalue_storage
+$ go run server.go
+```
 
-start redis : src/redis-server
+run test put client with 10 goroutine in during 5 time second : 
+```
+keyvalue_storage
+$go run client.go
+```

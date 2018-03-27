@@ -93,16 +93,16 @@ func main(){
 	lenghtCache = 0
 
 	// worker to check cache per time second
-	go func() {
-		for{
-			cache_map.TimeOutWorker(&cache,&timeItemInit, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, &lenghtCache, connRedis, connLevelDb)
-			time.Sleep(1 * time.Second)
-		}
-	}()
+	//go func() {
+	//	for{
+	//		cache_map.TimeOutWorker(&cache,&timeItemInit, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, &lenghtCache, connRedis, connLevelDb)
+	//		time.Sleep(1 * time.Second)
+	//	}
+	//}()
 
 	go func() {
 		for{
-			cache_map.FrequencyWorker(&cache, &timeItemInit, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, &lenghtCache, connRedis, connLevelDb)
+			cache_map.Worker(&cache, &timeItemInit, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, &lenghtCache, connRedis, connLevelDb)
 			time.Sleep(1 * time.Second)
 		}
 	}()

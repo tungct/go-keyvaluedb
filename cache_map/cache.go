@@ -130,9 +130,43 @@ func TimeOutWorker(cache *map[string] string, timeItemInit *map[string] int, tim
 }
 
 // check item in redis have high-frequency, put it to mem cache
-func FrequencyWorker(cache *map[string] string, timeItemInit *map[string] int, timeItemCache *map[string] int, timeItemRedis *map[string] int, timeItemDb *map[string]int, countRequest *map[string] int, lenghtCache *int, client * redis.Client, db *leveldb.DB) {
+func Worker(cache *map[string] string, timeItemInit *map[string] int, timeItemCache *map[string] int, timeItemRedis *map[string] int, timeItemDb *map[string]int, countRequest *map[string] int, lenghtCache *int, client * redis.Client, db *leveldb.DB) {
 
 	timeNow := time.Now().UnixNano()
+	mutex.Lock()
+
+	// check time out in cache
+	for key := range *timeItemCache{
+		if(float32(int(timeNow) - (*timeItemCache)[key]) / nano2second >= timeOut){
+			fmt.Println(key, " Time out Cache")
+			RemoveItemCache(cache, timeItemInit, timeItemCache, countRequest, key, lenghtCache)
+			//PrintCache(cache)
+			fmt.Println("\n")
+		}
+	}
+	for key := range *timeItemRedis{
+		if(float32(int(timeNow) - (*timeItemRedis)[key]) / nano2second >= timeOut){
+			fmt.Println(key, " Time out Redis")
+			redis_storage.DelKeyValueRedis(client, key)
+			delete(*timeItemRedis, key)
+			delete(*timeItemInit, key)
+			delete(*countRequest, key)
+			PrintCache(cache)
+			fmt.Println("\n")
+		}
+	}
+	for key := range *timeItemDb{
+		if(float32(int(timeNow) - (*timeItemDb)[key]) / nano2second >= timeOut){
+			fmt.Println(key, "Time out Db")
+			leveldb_storage.DelKeyValueLevelDb(db, key)
+			delete(*timeItemDb, key)
+			delete(*timeItemInit, key)
+			delete(*countRequest, key)
+			PrintCache(cache)
+			fmt.Println("\n")
+		}
+	}
+	mutex.Unlock()
 
 	// only check item in redis
 	mutex.Lock()
