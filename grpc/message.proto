@@ -7,8 +7,8 @@ service c {
 }
 
 message Message{
-    int32 id = 1;
-    string content = 2;
+    string key = 1;
+    string value = 2;
 }
 
 message MessageResponse{

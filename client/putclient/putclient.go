@@ -23,11 +23,11 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewSendMessageClient(conn)
+	c := pb.NewCClient(conn)
 
-	content := defaultContent
+	value := defaultContent
 	if len(os.Args) > 1 {
-		content = os.Args[1] // get content message from arg
+		value = os.Args[1] // get content message from arg
 	}
 
 	// send n message to server grpc
@@ -40,10 +40,11 @@ func main() {
 			for {
 
 				count = count + 1
-				content = strconv.Itoa(int(count))
+				value = strconv.Itoa(int(count))
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
-				message := &pb.Message{Id:int32(count), Content:content}
+				key := strconv.Itoa(int(count))
+				message := &pb.Message{Key:key, Value:value}
 				r, err := c.SendMessage(ctx, message)
 				fmt.Println("Send message ", *message)
 

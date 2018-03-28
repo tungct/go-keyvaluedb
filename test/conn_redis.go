@@ -8,13 +8,16 @@ import (
 
 	"time"
 	"sync"
+	"github.com/tungct/go-keyvaluedb/utils"
 )
 var mutex = &sync.Mutex{}
 func ExampleNewClient() {
+	conf := utils.LoadConfigRedis("./tungct/go-keyvaluedb/config/redis.conf")
+	add := conf.REDIS_ADDR
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     add,
+		Password: conf.PASSWORD, // no password set
+		DB:       conf.DB,  // use default DB
 	})
 	pong, err := client.Ping().Result()
 	fmt.Println(pong, err)

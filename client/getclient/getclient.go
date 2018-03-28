@@ -24,7 +24,7 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewSendMessageClient(conn)
+	c := pb.NewCClient(conn)
 
 	content := defaultContent
 	if len(os.Args) > 1 {
@@ -37,7 +37,7 @@ func main() {
 		content = strconv.Itoa(int(7))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		message := &pb.Message{Id:int32(-1), Content:content}
+		message := &pb.Message{Key: content, Value:content}
 		r, err := c.SendMessage(ctx, message)
 		fmt.Println("Send message ", *message)
 		if err != nil {
@@ -52,7 +52,7 @@ func main() {
 		content = strconv.Itoa(int(8))
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		message := &pb.Message{Id:int32(-1), Content:content}
+		message := &pb.Message{Key: content, Value:content}
 		r, err := c.SendMessage(ctx, message)
 		fmt.Println("Send message ", *message)
 		if err != nil {

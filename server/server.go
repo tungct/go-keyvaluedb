@@ -13,17 +13,9 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/tungct/go-keyvaluedb/leveldb_storage"
 	"github.com/tungct/go-keyvaluedb/cache_map"
-	"strconv"
-	"sync"
 	"time"
+	"github.com/tungct/go-keyvaluedb/utils"
 )
-
-const (
-	port = ":8888"
-        pathLevelDb = "../leveldb_storage/keyvaluedb"
-)
-
-var messQueue chan string
 
 var cache map[string] string
 var timeItemInit map[string] int // map key and time init per item
@@ -33,7 +25,7 @@ var timeItemCache map[string] int // map key and time in cache
 var countRequest map[string] int // map key and count Request item
 var count int
 var lenghtCache int // lenght of mem cache
-var mutex = &sync.Mutex{}
+
 // redis client
 var connRedis *redis.Client
 
@@ -46,20 +38,16 @@ type server struct{}
 func (s *server) SendMessage(ctx context.Context, in *pb.Message)(*pb.MessageResponse, error){
 	var err error
 	fmt.Println("Rec message from client : ", in)
-
-	// handle message receive from client with messageQueue, redis and levelDb
-	//messQueue, err = messqueue.PutMessage(messQueue, *in, connRedis, connLevelDb)
-
 	// cache item
-	if int(in.Id) != -1{
-		//mutex.Lock()
+	if in.Key != "-1"{
+
 		count = count + 1
-		cache_map.PutItemToCache(&cache, &timeItemInit, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, strconv.Itoa(int(in.Id)), in.Content, &lenghtCache, connRedis, connLevelDb)
-		//mutex.Unlock()
+		cache_map.PutItemToCache(&cache, &timeItemInit, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, in.Key, in.Value, &lenghtCache, connRedis, connLevelDb)
+
 		fmt.Println("Lenght Cache : ", lenghtCache)
 		fmt.Println(count)
 	}else { // get item in cache
-		value := cache_map.GetItemInCache(&cache, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, in.Content, connRedis, connLevelDb)
+		value := cache_map.GetItemInCache(&cache, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, in.Value, connRedis, connLevelDb)
 		fmt.Println("Value", value)
 		return &pb.MessageResponse{Content: "Response from server" + value }, nil
 	}
@@ -73,16 +61,15 @@ func (s *server) SendMessage(ctx context.Context, in *pb.Message)(*pb.MessageRes
 }
 
 func main(){
+
+	config := utils.LoadConfigServer("../config/server.conf")
+
 	count = 0
 	// init redis client
 	connRedis = redis_storage.InitConnRedis()
 
 	// init levelDb client
-	connLevelDb , _ = leveldb_storage.InitConnLevelDb(pathLevelDb, nil)
-
-	// init message Queue
-	//messQueue = messqueue.InitMessageQueue()
-	messQueue = make(chan string, 1000000)
+	connLevelDb , _ = leveldb_storage.InitConnLevelDb(config.PATHLEVELDB, nil)
 
 	cache = cache_map.InitCacheMap()
 	timeItemInit = make(map[string] int)
@@ -91,14 +78,6 @@ func main(){
 	timeItemDb = make(map[string] int)
 	countRequest = make(map[string]int)
 	lenghtCache = 0
-
-	// worker to check cache per time second
-	//go func() {
-	//	for{
-	//		cache_map.TimeOutWorker(&cache,&timeItemInit, &timeItemCache, &timeItemRedis, &timeItemDb, &countRequest, &lenghtCache, connRedis, connLevelDb)
-	//		time.Sleep(1 * time.Second)
-	//	}
-	//}()
 
 	go func() {
 		for{
@@ -109,13 +88,13 @@ func main(){
 
 
 	// init grpc server
-	lis, er := net.Listen("tcp", port)
+	lis, er := net.Listen("tcp", config.PORT)
 	fmt.Println("Server listen at port 8888")
 	if er != nil{
 		log.Fatalf("failed to serve : %v", er)
 	}
 	s := grpc.NewServer()
-	pb.RegisterSendMessageServer(s, &server{})
+	pb.RegisterCServer(s, &server{})
 	reflection.Register(s)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

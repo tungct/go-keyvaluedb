@@ -3,14 +3,16 @@ package redis_storage
 import (
 	"github.com/go-redis/redis"
 	"fmt"
+	"github.com/tungct/go-keyvaluedb/utils"
 )
 
 // init redis client
 func InitConnRedis() *redis.Client {
+	config := utils.LoadConfigRedis("../config/redis.conf")
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     config.REDIS_ADDR,
+		Password: config.PASSWORD, // no password set
+		DB:       config.DB,  // use default DB
 	})
 	return client
 }
