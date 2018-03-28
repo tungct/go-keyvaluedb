@@ -11,6 +11,7 @@ type ConfigRedis struct {
 	PASSWORD                    string
 	DB			    int
 }
+
 type ConfigServer struct{
 	IP 			       string
 	PORT                           string
@@ -18,7 +19,7 @@ type ConfigServer struct{
 }
 
 
-//function load all config of ssp server follow ConfigServer struct
+//function load all config of ConfigRedis struct
 func LoadConfigRedis(nameFileConfig string) ConfigRedis{
 	var config ConfigRedis
 	_, err := os.Stat(nameFileConfig)
@@ -32,6 +33,8 @@ func LoadConfigRedis(nameFileConfig string) ConfigRedis{
 	}
 	return config
 }
+
+//function load all config of ConfigRedis struct
 func LoadConfigServer(nameFileConfig string) ConfigServer{
 	var config ConfigServer
 	_, err := os.Stat(nameFileConfig)
