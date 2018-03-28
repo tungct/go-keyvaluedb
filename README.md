@@ -1,25 +1,36 @@
 # go-keyvaluedb
-Thư viện sử dụng : 
+libs :
+
 - go-Redis :  https://github.com/go-redis/redis
 - go-LevelDb : https://github.com/syndtr/goleveldb/leveldb
+- decode-config : https://github.com/BurntSushi/toml
 
-## Config Redis 
+## Config Redis and Server 
 
 ```
-redis_storage/redis.go
+config/redis.conf
+cofig/server.conf
 ```
 
 ## Getting started
 run server : 
 
 ```
-keyvalue_storage
+server/server.go
 $ go run server.go
 ```
 
 run test put client with 10 goroutine in during 5 time second : 
 ```
-keyvalue_storage
-$go run client.go
+client/putclient
+
+$go run putclient.go
 ```
-Kết quả 
+
+run test get client with 10 goroutine in during 5 time second : 
+```
+client/getclient
+
+$go run getclient.go
+```
+
