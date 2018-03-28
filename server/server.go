@@ -89,7 +89,7 @@ func main(){
 
 	// init grpc server
 	lis, er := net.Listen("tcp", config.PORT)
-	fmt.Println("Server listen at port 8888")
+	fmt.Println("Server listen at port ", config.PORT)
 	if er != nil{
 		log.Fatalf("failed to serve : %v", er)
 	}

@@ -12,6 +12,7 @@ type ConfigRedis struct {
 	DB			    int
 }
 type ConfigServer struct{
+	IP 			       string
 	PORT                           string
 	PATHLEVELDB		       string
 }

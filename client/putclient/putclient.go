@@ -9,16 +9,17 @@ import (
 	pb "github.com/tungct/go-keyvaluedb/grpc"
 	"fmt"
 	"strconv"
+	"github.com/tungct/go-keyvaluedb/utils"
 )
 
 const (
-	address     = "localhost:8888"
 	defaultContent = "Hello" // if arg is none
 )
 
 func main() {
+	config := utils.LoadConfigServer("../../config/server.conf")
 	// init grpc client
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	conn, err := grpc.Dial(config.IP +  config.PORT, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
